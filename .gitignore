@@ -1,0 +1,10 @@
+__pycache__/
+output/
+*.pyc
+*.avi
+*.zip
+<<<<<<< HEAD
+=======
+
+.venv/
+>>>>>>> 04d9fc5 (ignore)
