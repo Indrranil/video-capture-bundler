@@ -2,3 +2,7 @@
 opencv-python==4.10.0.84
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
+
+kafka-python
+google-cloud-storage
+pytz
