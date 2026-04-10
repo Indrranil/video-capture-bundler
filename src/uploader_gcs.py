@@ -1,4 +1,3 @@
-
 # src/uploader_gcs.py
 from __future__ import annotations
 
@@ -20,11 +19,11 @@ def upload_zip_to_gcs(
     factory_name: str,
 ) -> str:
     """
-    Upload path (team standard):
-        ddmmyy/<factory_location>/<factory_name>/<zip_file>
+    Upload path:
+        recorder-service/ddmmyy/<factory_location>/<factory_name>/<zip_file>
 
     Example:
-        120226/Pune/Lotus/cam1_120226_101500.zip
+        recorder-service/120226/Nashik/cam1/cam1_120226_101500.zip
 
     Returns:
         gs://bucket/path
@@ -40,7 +39,7 @@ def upload_zip_to_gcs(
 
     # --- Build object path ---
     zip_file = os.path.basename(local_zip_path)
-    object_name = f"{ddmmyy}/{factory_location}/{factory_name}/{zip_file}"
+    object_name = f"recorder-service/{ddmmyy}/{factory_location}/{factory_name}/{zip_file}"
 
     # --- Upload ---
     client = storage.Client()
