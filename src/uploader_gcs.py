@@ -29,7 +29,6 @@ def upload_zip_to_gcs(
         gs://bucket/path
     """
 
-    # --- Validation (prevents silent bad uploads) ---
     _must_get(bucket_name, "bucket_name")
     _must_get(factory_location, "factory_location")
     _must_get(factory_name, "factory_name")
@@ -37,15 +36,14 @@ def upload_zip_to_gcs(
     if not os.path.exists(local_zip_path):
         raise FileNotFoundError(f"Zip not found: {local_zip_path}")
 
-    # --- Build object path ---
     zip_file = os.path.basename(local_zip_path)
     object_name = f"recorder-service/{ddmmyy}/{factory_location}/{factory_name}/{zip_file}"
 
-    # --- Upload ---
-    client = storage.Client()
+    # Force project explicitly to avoid ADC project-detection issues
+    client = storage.Client(project="polaris-ai-452710")
+
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(object_name)
-
     blob.upload_from_filename(local_zip_path)
 
     gs_url = f"gs://{bucket_name}/{object_name}"
