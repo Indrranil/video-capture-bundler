@@ -1,0 +1,33 @@
+services:
+  video-capture-bundler:
+    build: .
+    container_name: video-capture-bundler
+    restart: unless-stopped
+    environment:
+      OUTPUT_DIR: /app/output
+      LOG_LEVEL: INFO
+
+      ENABLE_RECORDING: "false"
+      ENABLE_BUNDLING: "false"
+      ENABLE_MANIFEST: "false"
+      ENABLE_GCS_UPLOAD: "false"
+      ENABLE_API_PUSH: "false"
+
+      CAMERAS: cam1
+      CAMERA_IPS: 10.0.0.12
+      RTSP_URLS: ""
+
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 9092
+      KAFKA_GROUP_ID: video-capture-bundler
+      CAMERA_TOPICS: ""
+
+    volumes:
+      - ./output:/app/output
+
+    networks:
+      - polaris-service_default
+
+networks:
+  polaris-service_default:
+    external: true
