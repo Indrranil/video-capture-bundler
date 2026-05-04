@@ -1,4 +1,3 @@
-
 # src/main.py
 from __future__ import annotations
 
@@ -65,6 +64,15 @@ def main() -> None:
         )
         listener.start()
         print(f"[boot] Kafka listener started for {len(cam_topics)} topics")
+
+    # IMPORTANT:
+    # When recording is disabled, do not call record_chunk_avi().
+    # That function creates stub AVI files even with enable_recording=False.
+    # This keeps the container alive without creating any video files.
+    if not app_config.ENABLE_RECORDING:
+        print("[boot] ENABLE_RECORDING=false => dry-run idle mode; no recording files will be created")
+        while True:
+            time.sleep(60)
 
     while True:
         for i in range(len(names)):
