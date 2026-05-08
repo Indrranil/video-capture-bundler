@@ -3,6 +3,8 @@ services:
     build: .
     container_name: video-capture-bundler
     restart: unless-stopped
+    network_mode: host
+
     environment:
       OUTPUT_DIR: /app/output
       LOG_LEVEL: INFO
@@ -17,17 +19,10 @@ services:
       CAMERA_IPS: 10.0.0.12
       RTSP_URLS: ""
 
-      KAFKA_HOST: kafka
+      KAFKA_HOST: localhost
       KAFKA_PORT: 9092
       KAFKA_GROUP_ID: video-capture-bundler
       CAMERA_TOPICS: ""
 
     volumes:
       - ./output:/app/output
-
-    networks:
-      - polaris-service_default
-
-networks:
-  polaris-service_default:
-    external: true
