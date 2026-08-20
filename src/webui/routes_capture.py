@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from src.config import app_config
 from src.state_store import StateStore
 from src.storage import get_uploader
+from src.webui import transcode
 from src.webui.schemas import CapturesResponse, ChunkSummary
 
 router = APIRouter(prefix="/api", tags=["capture"])
@@ -104,10 +105,15 @@ def list_captures(
 
 @router.get("/captures/{chunk_id}/video")
 def get_capture_video(chunk_id: str):
-    """Serves the raw recording (never deleted by bundler.py after zipping) so it can be
-    viewed/downloaded from either the Manual Capture or Recordings page. Browsers have no AVI
-    demuxer, so this mostly means "download and play locally" today rather than guaranteed
-    inline playback — see the accompanying note on that tradeoff."""
+    """
+    Serves a browser-playable version of the recording for either the Manual Capture or
+    Recordings page. Recordings are always .avi (bundler.py never deletes the source file
+    after zipping it) — no major browser has an AVI demuxer, so this transcodes to H.264/MP4
+    via transcode.get_or_transcode() the first time a chunk is viewed, caching the result at
+    output/state/transcoded/<chunk_id>.mp4 so every view after that is instant. Falls back to
+    serving the raw .avi (download-only in most browsers, but not a broken link) if ffmpeg
+    isn't installed or the transcode fails for any reason.
+    """
     state = StateStore(output_dir=app_config.OUTPUT_DIR, tz_name=app_config.TIMEZONE)
     rec = state.get_chunk(chunk_id)
     if not rec:
@@ -116,6 +122,13 @@ def get_capture_video(chunk_id: str):
     video_path = rec.get("video_path")
     if not video_path or not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="No video file found for this chunk")
+
+    mp4_path = transcode.get_or_transcode(app_config.OUTPUT_DIR, chunk_id, video_path)
+    if mp4_path:
+        return FileResponse(
+            mp4_path, media_type="video/mp4", filename=f"{chunk_id}.mp4",
+            content_disposition_type="inline",
+        )
 
     return FileResponse(
         video_path,
