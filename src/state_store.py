@@ -41,6 +41,7 @@ class ChunkRecord:
     zip_path: Optional[str] = None
     verdict: Optional[int] = None  # 1 anomaly, 0 normal
     event_time_ist: Optional[str] = None
+    uploaded_url: Optional[str] = None  # set once manually uploaded via the webui's Upload button
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -51,6 +52,7 @@ class ChunkRecord:
             "zip_path": self.zip_path,
             "verdict": self.verdict,
             "event_time_ist": self.event_time_ist,
+            "uploaded_url": self.uploaded_url,
         }
 
 
@@ -128,6 +130,18 @@ class StateStore:
         rec["zip_path"] = zip_path
         chunks[chunk_id] = rec
         _safe_write_json(self.chunks_path, chunks)
+
+    def set_uploaded_url(self, chunk_id: str, url: str) -> None:
+        chunks = _safe_read_json(self.chunks_path)
+        rec = chunks.get(chunk_id)
+        if not rec:
+            return
+        rec["uploaded_url"] = url
+        chunks[chunk_id] = rec
+        _safe_write_json(self.chunks_path, chunks)
+
+    def get_chunk(self, chunk_id: str) -> Optional[Dict[str, Any]]:
+        return _safe_read_json(self.chunks_path).get(chunk_id)
 
     def list_chunks(self) -> Dict[str, Dict[str, Any]]:
         return _safe_read_json(self.chunks_path)

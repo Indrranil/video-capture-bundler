@@ -63,3 +63,8 @@ class ChunkSummary(BaseModel):
     started_at_ist: Optional[str] = None
     zip_path: Optional[str] = None
     verdict: Optional[int] = None
+    uploaded_url: Optional[str] = None
+    # Seconds since the previous chunk for the SAME camera, and whether that gap looks like
+    # normal on-schedule bundling vs. a missed cycle — see routes_capture._compute_gaps().
+    gap_sec: Optional[int] = None
+    bundling_status: Optional[str] = None  # "ok" | "gap" | None (first chunk seen for this camera)

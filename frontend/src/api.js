@@ -43,8 +43,8 @@ export const deleteCamera = (name) =>
 
 export const getCaptures = () => request("/api/captures");
 
-export const triggerCapture = (payload) =>
-  request("/api/capture", { method: "POST", body: JSON.stringify(payload) });
+export const uploadCapture = (chunkId) =>
+  request(`/api/captures/${encodeURIComponent(chunkId)}/upload`, { method: "POST" });
 
 // The <img> tag hits this URL directly (it's a multipart/x-mixed-replace stream, not JSON) —
 // this just builds the query string consistently with the rest of the API layer.
