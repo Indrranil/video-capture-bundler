@@ -2,7 +2,14 @@
 opencv-python==4.10.0.84
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
+requests==2.32.3
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+docker==7.1.0
+python-multipart==0.0.12
 
 kafka-python
 google-cloud-storage
 pytz
+boto3
+azure-storage-blob

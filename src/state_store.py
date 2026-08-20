@@ -15,6 +15,10 @@ def _now_ist_iso(tz_name: str) -> str:
     return datetime.now(tz).isoformat()
 
 
+# ponytail: no file lock — chunks.json now has three potential writers (main.py's loop, the
+# Kafka listener thread, and src/webui's manual-capture background task), each doing a non-
+# atomic read-modify-write. Accepted for now (matches the existing "last write wins" design);
+# add fcntl.flock around these two helpers if manual captures start colliding with the main loop.
 def _safe_read_json(path: str) -> dict:
     if not os.path.exists(path):
         return {}

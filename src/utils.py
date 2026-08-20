@@ -4,7 +4,7 @@ import os
 import time
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 def utc_now_iso() -> str:
@@ -28,9 +28,16 @@ def mb_to_bytes(mb: int) -> int:
     return mb * 1024 * 1024
 
 
-def write_json(path: str, payload: Dict[str, Any]) -> None:
+def write_json(path: str, payload: Any) -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
+
+
+def read_json(path: str) -> Optional[Any]:
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def safe_slug(s: str) -> str:

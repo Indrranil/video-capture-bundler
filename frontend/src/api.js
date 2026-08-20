@@ -1,0 +1,47 @@
+async function request(path, options) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail = body && body.detail ? body.detail : res.statusText;
+    throw new Error(detail);
+  }
+  return body;
+}
+
+export const getConfig = () => request("/api/config");
+
+export const updateConfig = (values) =>
+  request("/api/config", { method: "POST", body: JSON.stringify({ values }) });
+
+// Not routed through request() — this is multipart, not JSON, so it needs its own fetch
+// (setting Content-Type manually would break the browser's auto-generated form boundary).
+export const testStorageUpload = async (file, values) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("values", JSON.stringify(values));
+  const res = await fetch("/api/config/test-storage", { method: "POST", body: formData });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error((body && body.detail) || res.statusText);
+  }
+  return body;
+};
+
+export const getCameras = () => request("/api/cameras");
+
+export const addCamera = (payload) =>
+  request("/api/cameras", { method: "POST", body: JSON.stringify(payload) });
+
+export const updateCamera = (name, payload) =>
+  request(`/api/cameras/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(payload) });
+
+export const deleteCamera = (name) =>
+  request(`/api/cameras/${encodeURIComponent(name)}`, { method: "DELETE" });
+
+export const getCaptures = () => request("/api/captures");
+
+export const triggerCapture = (payload) =>
+  request("/api/capture", { method: "POST", body: JSON.stringify(payload) });

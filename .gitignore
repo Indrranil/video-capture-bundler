@@ -3,8 +3,17 @@ output/
 *.pyc
 *.avi
 *.zip
-<<<<<<< HEAD
-=======
 
 .venv/
->>>>>>> 04d9fc5 (ignore)
+venv/
+frontend/node_modules/
+frontend/dist/
+
+# Real secrets / machine-local config — .env.example is the tracked template.
+# NOTE: .env is already committed from before this line existed, so it's still tracked and
+# still gets pushed as-is; this only stops NEW copies/re-adds from being picked up automatically.
+.env
+frontend/.env
+
+# Claude Code guidance doc — not meant to be pushed to GitHub.
+CLAUDE.md

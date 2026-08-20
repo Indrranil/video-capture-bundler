@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from src.config import app_config
 from src.state_store import StateStore
 from src.selector import select_for_upload
-from src.uploader_gcs import upload_zip_to_gcs
+from src.storage import get_uploader
 
 from src.services.api_client import APIClient
 from src.services.metadata_publisher import MetadataPublisher
@@ -57,12 +57,12 @@ def finalize_day() -> None:
         print("[finalize] ENABLE_GCS_UPLOAD=false => skipping upload")
         return
 
-    bucket = _must_get(app_config.GCS_BUCKET, "GCS_BUCKET")
     factory_location = _must_get(app_config.FACTORY_LOCATION, "FACTORY_LOCATION")
     factory_name = _must_get(
         app_config.upload_factory_name(),
         "UPLOAD_FACTORY_NAME or FACTORY_NAME",
     )
+    uploader = get_uploader(app_config.STORAGE_PROVIDER)
 
     to_upload: List[Dict[str, Any]] = []
     to_upload.extend(anomalies)
@@ -74,8 +74,7 @@ def finalize_day() -> None:
         if not zip_path or not os.path.exists(zip_path):
             continue
 
-        gs_url = upload_zip_to_gcs(
-            bucket_name=bucket,
+        gs_url = uploader.upload_zip(
             local_zip_path=zip_path,
             ddmmyy=day_key,
             factory_location=factory_location,

@@ -5,24 +5,30 @@ services:
     restart: unless-stopped
     network_mode: host
 
+    # OUTPUT_DIR is pinned here (not left to .env) because it's a container-topology concern —
+    # it must match the ./output:/app/output volume mount below, regardless of whatever
+    # host-local path .env's OUTPUT_DIR carries for native (non-Docker) runs.
+    #
+    # Everything else is intentionally NOT set here — all actual pipeline config lives in .env
+    # (single source of truth for both services below). pydantic-settings gives real OS env
+    # vars priority over .env, so duplicating pipeline knobs here would silently shadow any
+    # UI-saved edit.
     environment:
       OUTPUT_DIR: /app/output
-      LOG_LEVEL: INFO
-
-      ENABLE_RECORDING: "false"
-      ENABLE_BUNDLING: "false"
-      ENABLE_MANIFEST: "false"
-      ENABLE_GCS_UPLOAD: "false"
-      ENABLE_API_PUSH: "false"
-
-      CAMERAS: cam1
-      CAMERA_IPS: 10.0.0.12
-      RTSP_URLS: ""
-
-      KAFKA_HOST: localhost
-      KAFKA_PORT: 9092
-      KAFKA_GROUP_ID: video-capture-bundler
-      CAMERA_TOPICS: ""
-
     volumes:
       - ./output:/app/output
+      - ./.env:/app/.env
+
+  webui:
+    build: .
+    container_name: video-capture-bundler-webui
+    restart: unless-stopped
+    network_mode: host
+    command: ["uvicorn", "src.webui.main:app", "--host", "0.0.0.0", "--port", "5000"]
+    environment:
+      OUTPUT_DIR: /app/output
+      RECORDER_CONTAINER_NAME: video-capture-bundler
+    volumes:
+      - ./output:/app/output
+      - ./.env:/app/.env
+      - /var/run/docker.sock:/var/run/docker.sock
