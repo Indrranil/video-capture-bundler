@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import ConfigPage from "./pages/ConfigPage.jsx";
 import CamerasPage from "./pages/CamerasPage.jsx";
 import CapturePage from "./pages/CapturePage.jsx";
+import RecordingsPage from "./pages/RecordingsPage.jsx";
 
 export default function App() {
   return (
@@ -22,12 +23,16 @@ export default function App() {
           <NavLink to="/capture" className={({ isActive }) => "tab" + (isActive ? " active" : "")}>
             Manual Capture
           </NavLink>
+          <NavLink to="/recordings" className={({ isActive }) => "tab" + (isActive ? " active" : "")}>
+            Recordings
+          </NavLink>
         </nav>
         <Routes>
           <Route path="/" element={<ConfigPage />} />
           <Route path="/config" element={<ConfigPage />} />
           <Route path="/cameras" element={<CamerasPage />} />
           <Route path="/capture" element={<CapturePage />} />
+          <Route path="/recordings" element={<RecordingsPage />} />
         </Routes>
       </div>
     </BrowserRouter>

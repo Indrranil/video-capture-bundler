@@ -41,10 +41,21 @@ export const updateCamera = (name, payload) =>
 export const deleteCamera = (name) =>
   request(`/api/cameras/${encodeURIComponent(name)}`, { method: "DELETE" });
 
-export const getCaptures = () => request("/api/captures");
+export const getCaptures = (source, limit) => {
+  const params = new URLSearchParams();
+  if (source) params.set("source", source);
+  if (limit) params.set("limit", limit);
+  const qs = params.toString();
+  return request(`/api/captures${qs ? `?${qs}` : ""}`);
+};
 
 export const uploadCapture = (chunkId) =>
   request(`/api/captures/${encodeURIComponent(chunkId)}/upload`, { method: "POST" });
+
+// Opens in a new tab: the browser plays it if it can decode the codec/container, otherwise
+// falls back to its normal "can't display this, download it" behavior (see the AVI/browser
+// codec-support caveat called out alongside this feature).
+export const captureVideoUrl = (chunkId) => `/api/captures/${encodeURIComponent(chunkId)}/video`;
 
 // The <img> tag hits this URL directly (it's a multipart/x-mixed-replace stream, not JSON) —
 // this just builds the query string consistently with the rest of the API layer.

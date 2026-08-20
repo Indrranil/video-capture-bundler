@@ -2,38 +2,45 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 
 from src.config import app_config
 from src.state_store import StateStore
 from src.storage import get_uploader
-from src.webui.schemas import ChunkSummary
+from src.webui.schemas import CapturesResponse, ChunkSummary
 
 router = APIRouter(prefix="/api", tags=["capture"])
 
 
 def _compute_gaps(chunks: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Groups chunk records by camera, sorted chronologically, and annotates each with the gap
-    (in seconds) since that camera's previous chunk, plus a coarse "ok"/"gap" verdict — this is
-    what lets you actually SEE that time-wise bundling has been firing on schedule rather than
-    just trusting it. Computed over the FULL history (not just whatever's displayed), so gaps
-    stay accurate even once a camera's chunks fall outside the top-N shown in the UI.
+    Annotates each AUTO chunk with the gap (seconds) since that camera's previous AUTO chunk,
+    plus a coarse "ok"/"gap" verdict — this is what lets you actually SEE that the main loop's
+    time-wise bundling has been firing on schedule rather than just trusting it. Computed over
+    the FULL history first (not just whatever's displayed), so gaps stay accurate even once a
+    camera's older chunks fall outside the top-N shown in the UI.
+
+    Manual chunks are deliberately excluded from this sequence entirely (not just skipped when
+    annotating) — mixing an on-demand manual recording into the schedule would make the
+    surrounding AUTO gaps look artificially larger/smaller than reality. Manual chunks always
+    get gap_sec=None/bundling_status=None; there's no "expected schedule" for them.
 
     "ok" = gap <= 2x VIDEO_DURATION (generous — bundling/upload latency, not just recording
     time, eats into the gap); anything larger is flagged "gap" as a likely missed cycle. The
-    very first chunk seen for a camera has no previous chunk to compare against, so gap_sec/
-    bundling_status stay None for it rather than falsely flagging a "gap".
+    first AUTO chunk seen for a camera has nothing to compare against, so it also stays None.
     """
     by_camera: Dict[str, List[Dict[str, Any]]] = {}
     for rec in chunks.values():
+        if rec.get("source", "auto") != "auto":
+            continue
         by_camera.setdefault(rec.get("camera_name", ""), []).append(dict(rec))
 
     tolerance_sec = max(1, app_config.VIDEO_DURATION) * 2
-    out: List[Dict[str, Any]] = []
+    annotated_by_id: Dict[str, Dict[str, Any]] = {}
 
     for items in by_camera.values():
         items.sort(key=lambda r: r.get("started_at_ist") or "")
@@ -57,17 +64,65 @@ def _compute_gaps(chunks: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
 
             if dt is not None:
                 prev_dt = dt
-            out.append(item)
+            annotated_by_id[item["chunk_id"]] = item
 
+    out: List[Dict[str, Any]] = []
+    for rec in chunks.values():
+        chunk_id = rec.get("chunk_id")
+        annotated = annotated_by_id.get(chunk_id)
+        if annotated is not None:
+            out.append(annotated)
+        else:
+            row = dict(rec)
+            row.setdefault("gap_sec", None)
+            row.setdefault("bundling_status", None)
+            out.append(row)
     return out
 
 
-@router.get("/captures", response_model=List[ChunkSummary])
-def list_captures() -> List[ChunkSummary]:
+@router.get("/captures", response_model=CapturesResponse)
+def list_captures(
+    source: Optional[str] = Query(default=None, description="'auto' | 'manual', omit for both"),
+    limit: int = Query(default=100, le=1000),
+) -> CapturesResponse:
     state = StateStore(output_dir=app_config.OUTPUT_DIR, tz_name=app_config.TIMEZONE)
     with_gaps = _compute_gaps(state.list_chunks())
-    rows = sorted(with_gaps, key=lambda r: r.get("started_at_ist") or "", reverse=True)
-    return [ChunkSummary(**row) for row in rows[:20]]
+
+    if source:
+        with_gaps = [r for r in with_gaps if r.get("source", "auto") == source]
+
+    with_gaps.sort(key=lambda r: r.get("started_at_ist") or "", reverse=True)
+    total = len(with_gaps)
+
+    rows = []
+    for row in with_gaps[:limit]:
+        video_path = row.get("video_path")
+        rows.append(ChunkSummary(**row, has_video=bool(video_path and os.path.exists(video_path))))
+
+    return CapturesResponse(total=total, rows=rows)
+
+
+@router.get("/captures/{chunk_id}/video")
+def get_capture_video(chunk_id: str):
+    """Serves the raw recording (never deleted by bundler.py after zipping) so it can be
+    viewed/downloaded from either the Manual Capture or Recordings page. Browsers have no AVI
+    demuxer, so this mostly means "download and play locally" today rather than guaranteed
+    inline playback — see the accompanying note on that tradeoff."""
+    state = StateStore(output_dir=app_config.OUTPUT_DIR, tz_name=app_config.TIMEZONE)
+    rec = state.get_chunk(chunk_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail=f"Chunk '{chunk_id}' not found")
+
+    video_path = rec.get("video_path")
+    if not video_path or not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="No video file found for this chunk")
+
+    return FileResponse(
+        video_path,
+        media_type="video/x-msvideo",
+        filename=os.path.basename(video_path),
+        content_disposition_type="inline",
+    )
 
 
 @router.post("/captures/{chunk_id}/upload")

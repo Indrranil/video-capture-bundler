@@ -166,7 +166,10 @@ def main() -> None:
             )
 
             # now we know chunk_id => mark as current
-            state.set_current_chunk(camera_name=camera_name, chunk_id=rec.chunk_id, topic=topic)
+            state.set_current_chunk(
+                camera_name=camera_name, chunk_id=rec.chunk_id, topic=topic,
+                video_path=rec.video_path, source="auto",
+            )
 
             if rec.ok:
                 print(f"[record] OK camera={camera_name} file={rec.video_path} dur={rec.duration_sec}s")

@@ -42,6 +42,8 @@ class ChunkRecord:
     verdict: Optional[int] = None  # 1 anomaly, 0 normal
     event_time_ist: Optional[str] = None
     uploaded_url: Optional[str] = None  # set once manually uploaded via the webui's Upload button
+    video_path: Optional[str] = None  # raw recording path — bundler.py never deletes this after zipping
+    source: str = "auto"  # "auto" (main.py's loop) | "manual" (webui start/stop)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -53,6 +55,8 @@ class ChunkRecord:
             "verdict": self.verdict,
             "event_time_ist": self.event_time_ist,
             "uploaded_url": self.uploaded_url,
+            "video_path": self.video_path,
+            "source": self.source,
         }
 
 
@@ -70,7 +74,14 @@ class StateStore:
         ensure_dir(self.state_dir)
         self.chunks_path = os.path.join(self.state_dir, "chunks.json")
 
-    def set_current_chunk(self, camera_name: str, chunk_id: str, topic: str) -> None:
+    def set_current_chunk(
+        self,
+        camera_name: str,
+        chunk_id: str,
+        topic: str,
+        video_path: Optional[str] = None,
+        source: str = "auto",
+    ) -> None:
         path = os.path.join(self.state_dir, f"current_chunk_{camera_name}.json")
         payload = {
             "camera_name": camera_name,
@@ -88,6 +99,8 @@ class StateStore:
                 camera_name=camera_name,
                 topic=topic,
                 started_at_ist=payload["started_at_ist"],
+                video_path=video_path,
+                source=source,
             )
             chunks[chunk_id] = rec.to_dict()
             _safe_write_json(self.chunks_path, chunks)

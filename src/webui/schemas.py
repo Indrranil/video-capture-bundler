@@ -64,7 +64,15 @@ class ChunkSummary(BaseModel):
     zip_path: Optional[str] = None
     verdict: Optional[int] = None
     uploaded_url: Optional[str] = None
-    # Seconds since the previous chunk for the SAME camera, and whether that gap looks like
-    # normal on-schedule bundling vs. a missed cycle — see routes_capture._compute_gaps().
+    source: str = "auto"  # "auto" (main.py's loop) | "manual" (webui start/stop)
+    has_video: bool = False  # whether GET /api/captures/{chunk_id}/video has something to serve
+    # Seconds since the previous AUTO chunk for the SAME camera, and whether that gap looks like
+    # normal on-schedule bundling vs. a missed cycle — see routes_capture._compute_gaps(). Always
+    # None for manual chunks — there's no "expected schedule" for an on-demand recording.
     gap_sec: Optional[int] = None
-    bundling_status: Optional[str] = None  # "ok" | "gap" | None (first chunk seen for this camera)
+    bundling_status: Optional[str] = None  # "ok" | "gap" | None
+
+
+class CapturesResponse(BaseModel):
+    total: int  # count matching the filter across FULL history, not just the returned rows
+    rows: List[ChunkSummary]

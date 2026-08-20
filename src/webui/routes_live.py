@@ -98,7 +98,10 @@ def _run_recording(camera_name: str, camera_ip: str, rtsp_url: Optional[str], st
             height=app_config.VIDEO_HEIGHT,
             stop_event=stop_event,
         )
-        state.set_current_chunk(camera_name=camera_name, chunk_id=rec.chunk_id, topic="")
+        state.set_current_chunk(
+            camera_name=camera_name, chunk_id=rec.chunk_id, topic="",
+            video_path=rec.video_path, source="manual",
+        )
 
         zip_path = bundle_recording(
             output_dir=app_config.OUTPUT_DIR,
