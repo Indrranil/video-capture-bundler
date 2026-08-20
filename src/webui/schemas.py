@@ -33,7 +33,6 @@ class ConfigUpdateRequest(BaseModel):
 class CaptureRequest(BaseModel):
     camera: str
     adhoc_rtsp_url: Optional[str] = None
-    duration_override: Optional[int] = None
 
 
 class CameraOut(BaseModel):

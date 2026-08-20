@@ -45,3 +45,18 @@ export const getCaptures = () => request("/api/captures");
 
 export const triggerCapture = (payload) =>
   request("/api/capture", { method: "POST", body: JSON.stringify(payload) });
+
+// The <img> tag hits this URL directly (it's a multipart/x-mixed-replace stream, not JSON) —
+// this just builds the query string consistently with the rest of the API layer.
+export const livePreviewUrl = (camera, adhocRtspUrl) => {
+  const params = new URLSearchParams({ camera: camera || "__adhoc__" });
+  if (adhocRtspUrl) params.set("adhoc_rtsp_url", adhocRtspUrl);
+  return `/api/live/preview?${params.toString()}`;
+};
+
+export const getLiveStatus = () => request("/api/live/status");
+
+export const startLiveRecording = (payload) =>
+  request("/api/live/start", { method: "POST", body: JSON.stringify(payload) });
+
+export const stopLiveRecording = () => request("/api/live/stop", { method: "POST" });

@@ -340,3 +340,13 @@ tbody tr:hover td {
   color: var(--text-muted);
   max-width: 480px;
 }
+
+.live-preview {
+  display: block;
+  max-width: 100%;
+  width: 480px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin: 4px 0 16px;
+  background: #000;
+}
